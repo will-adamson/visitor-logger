@@ -32,10 +32,11 @@ c = conn.cursor()
 
 try:
     c.execute('''CREATE TABLE IF NOT EXISTS VISITS
-                 (timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-                  DISTANCE REAL,
-                  PHOTO_PATH TEXT,
-                  DETECTED INTEGER)''')
+                (ID INTEGER PRIMARY KEY AUTOINCREMENT,
+                DATETIME TEXT,
+                DISTANCE REAL,
+                PHOTO_PATH TEXT,
+                FACE_DETECTED INTEGER)''')
     while True:
         data = arduino.readline().decode('utf-8').strip()
         

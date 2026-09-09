@@ -1,7 +1,7 @@
 //Pins
 const int trigPin = 9;
 const int echoPin = 10;
-const int threshold = 45;
+const int threshold = 15;
 
 //Sensor distance
 float duration, distance;
@@ -34,7 +34,7 @@ void loop() {
   {
     if(!wasDetected){
       int intDistance = static_cast<int>(distance); 
-      Serial.println("Dectected,");
+      Serial.print("DETECTED,");
       Serial.println(intDistance);
       wasDetected = true;
     }

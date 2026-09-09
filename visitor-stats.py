@@ -10,17 +10,14 @@ def load_visits():
     conn.close()
     return visits
 
-def average_distance():
-    conn = sqlite3.connect('logDB.db')
-    c = conn.cursor()
-    c.execute("SELECT AVG(DISTANCE) FROM VISITS")
-    avg_distance = c.fetchall()
-    conn.close()
-    return avg_distance
 
-for visit in load_visits():
-    print(visit)
+def main():
+    visits = load_visits()
+    print(f"Total visits: {len(visits)}")
     
-avg_distance = average_distance()
-
-print(f"Average distance: {avg_distance:.1f} cm")
+    for visit in visits:
+        print(f"ID: {visit[0]}, DATETIME: {visit[1]}, DISTANCE: {visit[2]}, PHOTO_PATH: {visit[3]}, FACE_DETECTED: {visit[4]}")
+    
+    print("Average distance: {:.2f} cm".format(sum(visit[2] for visit in visits) / len(visits)) if visits else 0)
+    print("Average visit per day: {:.2f}".format(len(visits) / len(set(visit[1].split('T')[0] for visit in visits))) if visits else 0)
+    

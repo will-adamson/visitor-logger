@@ -26,7 +26,7 @@ def detect_face(raw_image):
     
     return 1 if len(face) > 0 else 0
 
-arduino = serial.Serial(port='COM10',  baudrate=9600, timeout=.1)
+arduino = serial.Serial(port='/dev/ttyACM0',  baudrate=9600, timeout=.1)
 conn = sqlite3.connect('logDB.db')
 c = conn.cursor()
 

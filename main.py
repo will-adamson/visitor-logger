@@ -45,6 +45,7 @@ def detect_face(raw_image):
 
 arduino = serial.Serial(port='/dev/ttyACM0',  baudrate=9600, timeout=.1)
 conn = sqlite3.connect('logDB.db')
+conn.execute("PRAGMA journal_mode=WAL;") #For easier displaying of the info while running the program
 c = conn.cursor()
 
 try:

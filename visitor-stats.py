@@ -14,7 +14,7 @@ def average_distance():
     conn = sqlite3.connect('logDB.db')
     c = conn.cursor()
     c.execute("SELECT AVG(DISTANCE) FROM VISITS")
-    avg_distance = c.fetchone()[0]
+    avg_distance = c.fetchall()
     conn.close()
     return avg_distance
 

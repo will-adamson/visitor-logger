@@ -10,6 +10,9 @@ def load_visits():
     conn.close()
     return visits
 
+def clear_console():
+    os.system('clear')
+
 
 def main():
     visits = load_visits()
@@ -20,6 +23,12 @@ def main():
     print(f"Total visits: {len(visits)}")    
     print("Average distance: {:.2f} cm".format(sum(visit[2] for visit in visits) / len(visits)) if visits else 0)
     print("Average visit per day: {:.2f}".format(len(visits) / len(set(visit[1].split('T')[0] for visit in visits))) if visits else 0)
+    
+    while True:
+        clear_console()
+        visits = load_visits()
+        time.sleep(5)  # Refresh every 5 seconds
+    
     
 if __name__ == "__main__":
     main()

@@ -7,7 +7,7 @@ from picamera2 import Picamera2
 from datetime import datetime
 
 #BEGIN: https://randomnerdtutorials.com/raspberry-pi-picamera2-python/
-#Pretty heavily altered to fit my use case
+#Picam set up, pretty heavily altered to fit my use case (image size restraints, half has been moved to a function, etc.)
 picam2 = Picamera2()
 config = picam2.create_still_configuration(main={"size": (640, 480)})
 picam2.configure(config)
@@ -29,7 +29,7 @@ def take_photo():
 def detect_face(raw_image):
     #BEGIN: https://www.datacamp.com/tutorial/face-detection-python-opencv
     #The following code is from a tutorial on face detection using OpenCV. 
-    # I slightly changed it for my own use case.
+    # I slightly changed it for my own use case, and only took what was needed for my program
     
     img = cv.imread(raw_image)
     gray_image = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
@@ -76,9 +76,6 @@ try:
                 else:
                     os.remove(photo_path)
                     print(f"No face detected. Distance: {distance} cm. Photo deleted.")
-                    
-except KeyboardInterrupt:
-    print("\nStopped.")
 finally:
     picam2.stop()
     arduino.close()

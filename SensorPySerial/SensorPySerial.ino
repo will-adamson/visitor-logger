@@ -1,7 +1,8 @@
 //Pins
 const int trigPin = 9;
 const int echoPin = 10;
-const int threshold = 15;
+const int minThreshold = 2;
+const int maxThreshold = 15;
 
 //Sensor distance
 float duration, distance;
@@ -30,7 +31,7 @@ void loop() {
   distance = (duration*.0343)/2;
   // END: https://projecthub.arduino.cc/Isaac100/getting-started-with-the-hc-sr04-ultrasonic-sensor-7cabe1
 
-  if(distance < threshold)
+  if(distance > minThreshold && distance < maxThreshold)
   {
     if(!wasDetected){
       int intDistance = static_cast<int>(distance); 

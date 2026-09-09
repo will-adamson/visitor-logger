@@ -23,4 +23,4 @@ for visit in load_visits():
     
 avg_distance = average_distance()
 
-print(f"Average distance: {avg_distance} cm")
+print(f"Average distance: {avg_distance:.1f} cm")

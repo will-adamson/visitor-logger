@@ -21,3 +21,5 @@ def main():
     print("Average distance: {:.2f} cm".format(sum(visit[2] for visit in visits) / len(visits)) if visits else 0)
     print("Average visit per day: {:.2f}".format(len(visits) / len(set(visit[1].split('T')[0] for visit in visits))) if visits else 0)
     
+if __name__ == "__main__":
+    main()

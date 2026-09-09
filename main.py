@@ -1,13 +1,12 @@
 import serial
 import sqlite3
 import cv2 as cv
+import os
 from datetime import datetime
 
 def take_photo():
     #todo: replace with picamera2 functionality
-    return "/test.jpg"
-
-raw_image = take_photo()
+    return "test.jpg"
 
 def detect_face(raw_image):
     #BEGIN: https://www.datacamp.com/tutorial/face-detection-python-opencv
@@ -56,6 +55,8 @@ try:
                     conn.commit()
                     print(f"Face detected at {timestamp}. Distance: {distance} cm. Photo saved at {photo_path}.")
                 else:
+                    #TODO: uncomment this line when ready to delete photos without faces
+                    #os.remove(photo_path)
                     print(f"No face detected. Distance: {distance} cm. Photo deleted.")
                     
 except KeyboardInterrupt:

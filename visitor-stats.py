@@ -21,5 +21,5 @@ def average_distance():
 for visit in load_visits():
     print(visit)
     
-for distance in average_distance():
-    print(f"Average distance: {distance} cm")
+
+print(f"Average distance: {distance} cm")

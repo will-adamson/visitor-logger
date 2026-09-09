@@ -2,16 +2,34 @@ import serial
 import sqlite3
 import cv2 as cv
 import os
+import time
+from picamera2 import Picamera2
 from datetime import datetime
 
+#BEGIN: https://randomnerdtutorials.com/raspberry-pi-picamera2-python/
+#Pretty heavily altered to fit my use case
+picam2 = Picamera2()
+config = picam2.create_still_configuration(main={"size": (640, 480)})
+picam2.configure(config)
+picam2.start()
+time.sleep(2)
+os.makedirs("images", exist_ok=True)
+
 def take_photo():
-    #todo: replace with picamera2 functionality
-    return "test.jpg"
+
+    
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    photo_path = f"images/{timestamp}.jpg"
+    picam2.capture_file(photo_path)
+
+    return photo_path
+    #END: https://randomnerdtutorials.com/raspberry-pi-picamera2-python/
+    
 
 def detect_face(raw_image):
     #BEGIN: https://www.datacamp.com/tutorial/face-detection-python-opencv
     #The following code is from a tutorial on face detection using OpenCV. 
-    # I will still need to change it up for my own use case.
+    # I slightly changed it for my own use case.
     
     img = cv.imread(raw_image)
     gray_image = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
@@ -55,13 +73,13 @@ try:
                     conn.commit()
                     print(f"Face detected at {timestamp}. Distance: {distance} cm. Photo saved at {photo_path}.")
                 else:
-                    #TODO: uncomment this line when ready to delete photos without faces
-                    #os.remove(photo_path)
+                    os.remove(photo_path)
                     print(f"No face detected. Distance: {distance} cm. Photo deleted.")
                     
 except KeyboardInterrupt:
     print("\nStopped.")
 finally:
+    picam2.stop()
     arduino.close()
     conn.close()
             

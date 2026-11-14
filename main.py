@@ -61,7 +61,7 @@ def detect_face(photo_path):
     faces = FACE_CLASSIFIER.detectMultiScale(
         gray_image, scaleFactor=1.1, minNeighbors=5, minSize=(40, 40))
     #END: https://www.datacamp.com/tutorial/face-detection-python-opencv
-
+    print(f"Faces found: {len(faces)}")
     return len(faces) > 0
 
 def parse_distance(line):

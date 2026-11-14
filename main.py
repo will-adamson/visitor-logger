@@ -65,10 +65,9 @@ def detect_face(photo_path):
     return len(faces) > 0
 
 def parse_line(line):
+    #Arduino output format: "DETECTED,<distance>" or "RANGE,<distance>" or "HEARTBEAT"
     if line == "HEARTBEAT":
         return "HEARTBEAT", None
-    
-    #Arduino output format: "DETECTED,<distance>" or "RANGE,<range>"
     parts = line.split(",")
     if len(parts) != 2 or parts[0] not in ("DETECTED", "RANGE"):
         print(f"Ignoring unexpected serial line: {line!r}")

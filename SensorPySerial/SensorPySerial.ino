@@ -1,4 +1,4 @@
-#include <avr/wdt.h>
+#include <avr/wdt.h> //Watchdog
 
 //Pins
 const int trigPin = 9;
@@ -34,7 +34,7 @@ volatile bool paused = false;
 const int ledPin = 6;
 const unsigned long fadePeriod = 2000; //One full fade up and down
 
-//Heartbeat, lets the Pi know the Arduino is still running
+//Heartbeat for watchdog timer
 const unsigned long heartbeatInterval = 1000;
 unsigned long lastHeartbeatTime = 0;
 
@@ -61,7 +61,7 @@ void setup() {
 }
 
 void loop() {
-  wdt_reset();
+  wdt_reset(); //Resets watchdog timer
   unsigned long now = millis();
   updateLed(now);
   updateRange();
@@ -104,12 +104,12 @@ float medianDistance(float newReading) {
   readingIndex = (readingIndex + 1) % sampleCount;
 
   //Sort a copy, so the buffer keeps track of which reading is oldest
+  //BEGIN: https://www.geeksforgeeks.org/cpp/cpp-program-for-insertion-sort/
+  //Insertion sort
   float sorted[sampleCount];
   for (int i = 0; i < sampleCount; i++) {
     sorted[i] = readings[i];
   }
-  //BEGIN: https://www.geeksforgeeks.org/cpp/cpp-program-for-insertion-sort/
-  //Insertion sort
   for (int i = 1; i < sampleCount; i++) {
     float key = sorted[i];
     int j = i - 1;
@@ -185,6 +185,7 @@ void sendRange() {
   Serial.print("RANGE,");
   Serial.println(detectionRange);
 }
+
 
 void sendHeartbeat(unsigned long now) {
   if (now - lastHeartbeatTime >= heartbeatInterval) {

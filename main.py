@@ -39,8 +39,18 @@ def setup_db():
                     DATETIME TEXT,
                     DISTANCE REAL,
                     PHOTO_PATH TEXT)''')
+    #Small table to store the current detection range
+    conn.execute('''CREATE TABLE IF NOT EXISTS STATUS
+                    (ID INTEGER PRIMARY KEY,
+                    DETECTION_RANGE INTEGER)''')
     
     return conn
+
+def save_range(conn, detection_range):
+    #Always row 1, so this overwrites the previous range
+    conn.execute("INSERT OR REPLACE INTO STATUS (ID, DETECTION_RANGE) VALUES (1, ?)",
+                 (detection_range,))
+    conn.commit()
 
 def take_photo(picam2, now):
     photo_path = f"{IMAGE_DIR}/{now.strftime('%Y%m%d_%H%M%S')}.jpg"
@@ -109,6 +119,7 @@ def main():
             if message == "DETECTED":
                 handle_detection(picam2, conn, value)
             elif message == "RANGE":
+                save_range(conn, value)
                 print(f"Detection range set to {value} cm")
     finally:
         picam2.stop()

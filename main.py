@@ -61,16 +61,15 @@ def detect_face(photo_path):
     faces = FACE_CLASSIFIER.detectMultiScale(
         gray_image, scaleFactor=1.1, minNeighbors=5, minSize=(40, 40))
     #END: https://www.datacamp.com/tutorial/face-detection-python-opencv
-    print(f"Faces found: {len(faces)}")
     return len(faces) > 0
 
-def parse_distance(line):
-    #Arduino output format: "DETECTED,<distance>"
+def parse_line(line):
+    #Arduino output format: "DETECTED,<distance>" or "RANGE,<range>"
     parts = line.split(",")
-    if len(parts) != 2 or parts[0] != "DETECTED":
+    if len(parts) != 2 or parts[0] not in ("DETECTED", "RANGE"):
         print(f"Ignoring unexpected serial line: {line!r}")
-        return None
-    return int(parts[1])
+        return None, None
+    return parts[0], int(parts[1])
 
 def handle_detection(picam2, conn, distance):
     #Detection and DB insert
@@ -98,9 +97,11 @@ def main():
             line = arduino.readline().decode("utf-8", errors="replace").strip()
             if not line:
                 continue
-            distance = parse_distance(line)
-            if distance is not None:
-                handle_detection(picam2, conn, distance)
+            message, value = parse_line(line)
+            if message == "DETECTED":
+                handle_detection(picam2, conn, value)
+            elif message == "RANGE":
+                print(f"Detection range set to {value} cm")
     finally:
         picam2.stop()
         arduino.close()

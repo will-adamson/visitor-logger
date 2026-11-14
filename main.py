@@ -30,7 +30,7 @@ def setup_camera():
 
 
 def setup_db():
-    #Setup database in it's own function, rather than in main loop.
+    #Setup database in its own function, rather than in main loop.
     conn = sqlite3.connect("logDB.db")
     conn.execute("PRAGMA journal_mode=WAL;") #For easier displaying of the info while running the program
     conn.execute('''CREATE TABLE IF NOT EXISTS VISITS
@@ -42,7 +42,6 @@ def setup_db():
     return conn
 
 def take_photo(picam2, now):
-    
     photo_path = f"{IMAGE_DIR}/{now.strftime('%Y%m%d_%H%M%S')}.jpg"
     picam2.capture_file(photo_path)
     

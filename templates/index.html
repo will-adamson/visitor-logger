@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Visitor Logger</title>
+  <style>
+    body { margin: 0; background: #111; color: #eee; font-family: sans-serif; }
+    main { display: flex; gap: 16px; height: 100vh; padding: 16px; box-sizing: border-box; }
+    #photo-panel { flex: 3; display: flex; flex-direction: column; min-width: 0; }
+    #photo { flex: 1; min-height: 0; width: 100%; object-fit: contain; background: #000; }
+    #photo-info { margin: 8px 0 0; font-size: 18px; }
+    #stats { flex: 2; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-content: start; }
+    .stat { background: #222; padding: 10px; border-radius: 6px; }
+    .label { font-size: 13px; color: #999; }
+    .value { font-size: 28px; font-weight: bold; }
+    #status { grid-column: span 2; color: #f66; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <main>
+    <section id="photo-panel">
+      <img id="photo" alt="Latest visitor" hidden>
+      <p id="photo-info">No visits yet</p>
+    </section>
+    <section id="stats">
+      <div class="stat"><div class="label">Visits today</div><div class="value" id="visits-today">-</div></div>
+      <div class="stat"><div class="label">Total visits</div><div class="value" id="total-visits">-</div></div>
+      <div class="stat"><div class="label">Avg per day</div><div class="value" id="average-per-day">-</div></div>
+      <div class="stat"><div class="label">Busiest hour</div><div class="value" id="busiest-hour">-</div></div>
+      <div class="stat"><div class="label">Detection range</div><div class="value" id="detection-range">-</div></div>
+      <p id="status"></p>
+    </section>
+  </main>
+
+  <script>
+    const REFRESH_MS = 2000;
+
+    function show(id, value) {
+      document.getElementById(id).textContent = value ?? "-";
+    }
+
+    function showLatest(latest) {
+      if (latest === null) {
+        return;
+      }
+      //Only swap the image when there's a new photo, so it doesn't reload every refresh
+      const photo = document.getElementById("photo");
+      if (photo.getAttribute("src") !== latest.photo) {
+        photo.src = latest.photo;
+        photo.hidden = false;
+      }
+      show("photo-info", `${latest.time.replace("T", " ")} · ${latest.distance} cm`);
+    }
+
+    async function refresh() {
+      try {
+        const response = await fetch("/stats");
+        if (!response.ok) {
+          throw new Error(`server returned ${response.status}`);
+        }
+        const stats = await response.json();
+
+        show("visits-today", stats.visitsToday);
+        show("total-visits", stats.totalVisits);
+        show("average-per-day", stats.averagePerDay);
+        show("busiest-hour", stats.busiestHour === null ? null : `${stats.busiestHour}:00`);
+        show("detection-range", stats.detectionRange === null ? null : `${stats.detectionRange} cm`);
+        showLatest(stats.latest);
+        show("status", "");
+      } catch (error) {
+        show("status", `Can't load stats: ${error.message}`);
+      }
+    }
+
+    refresh();
+    setInterval(refresh, REFRESH_MS);
+  </script>
+</body>
+</html>

@@ -1,83 +1,112 @@
-import serial
-import sqlite3
-import cv2 as cv
 import os
+import sqlite3
 import time
-from picamera2 import Picamera2
 from datetime import datetime
 
-#BEGIN: https://randomnerdtutorials.com/raspberry-pi-picamera2-python/
-#Picam set up, pretty heavily altered to fit my use case (image size restraints, half has been moved to a function, etc.)
-picam2 = Picamera2()
-config = picam2.create_still_configuration(main={"size": (640, 480)})
-picam2.configure(config)
-picam2.start()
-time.sleep(2)
-os.makedirs("images", exist_ok=True)
+import cv2 as cv
+import serial
+from picamera2 import Picamera2
 
-def take_photo():
+IMAGE_DIR = "images"
 
-    
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    photo_path = f"images/{timestamp}.jpg"
-    picam2.capture_file(photo_path)
-
-    return photo_path
-    #END: https://randomnerdtutorials.com/raspberry-pi-picamera2-python/
-    
-
-def detect_face(raw_image):
-    #BEGIN: https://www.datacamp.com/tutorial/face-detection-python-opencv
-    #The following code is from a tutorial on face detection using OpenCV. 
-    # I slightly changed it for my own use case, and only took what was needed for my program
-    
-    img = cv.imread(raw_image)
-    gray_image = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
-    
-    face_classifier = cv.CascadeClassifier(
+#Loaded once at startup instead of on every photo
+FACE_CLASSIFIER = cv.CascadeClassifier(
     cv.data.haarcascades + "haarcascade_frontalface_default.xml")
+
+#CascadeClassifier doesn't raise if the file is missing, it just never finds faces
+if FACE_CLASSIFIER.empty():
+    raise RuntimeError("Failed to load Haar cascade file")
+
+def setup_camera():
+    #BEGIN: https://randomnerdtutorials.com/raspberry-pi-picamera2-python/
+    #Picam set up, altered to fit my use case (image size restraints, moved into its own function)
+    picam2 = Picamera2()
+    config = picam2.create_still_configuration(main={"size": (640, 480)})
+    picam2.configure(config)
+    picam2.start()
+    time.sleep(2)
+    #END: https://randomnerdtutorials.com/raspberry-pi-picamera2-python/
+    return picam2
+
+
+def setup_db():
+    #Setup database in it's own function, rather than in main loop.
+    conn = sqlite3.connect("logDB.db")
+    conn.execute("PRAGMA journal_mode=WAL;") #For easier displaying of the info while running the program
+    conn.execute('''CREATE TABLE IF NOT EXISTS VISITS
+                    (ID INTEGER PRIMARY KEY AUTOINCREMENT,
+                    DATETIME TEXT,
+                    DISTANCE REAL,
+                    PHOTO_PATH TEXT)''')
     
-    face = face_classifier.detectMultiScale(
-    gray_image, scaleFactor=1.1, minNeighbors=5, minSize=(40, 40))
+    return conn
+
+def take_photo(picam2, now):
+    
+    photo_path = f"{IMAGE_DIR}/{now.strftime('%Y%m%d_%H%M%S')}.jpg"
+    picam2.capture_file(photo_path)
+    
+    return photo_path
+
+    
+
+def detect_face(photo_path):
+    img = cv.imread(photo_path)
+    if img is None: #imread returns None if there's no file
+        raise RuntimeError(f"Could not read photo: {photo_path}")
+
+    #BEGIN: https://www.datacamp.com/tutorial/face-detection-python-opencv
+    #The following code is from a tutorial on face detection using OpenCV.
+    #I slightly changed it for my own use case, and only took what was needed for my program
+    gray_image = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+    faces = FACE_CLASSIFIER.detectMultiScale(
+        gray_image, scaleFactor=1.1, minNeighbors=5, minSize=(40, 40))
     #END: https://www.datacamp.com/tutorial/face-detection-python-opencv
-    
-    return 1 if len(face) > 0 else 0
 
-arduino = serial.Serial(port='/dev/ttyACM0',  baudrate=9600, timeout=.1)
-conn = sqlite3.connect('logDB.db')
-conn.execute("PRAGMA journal_mode=WAL;") #For easier displaying of the info while running the program
-c = conn.cursor()
+    return len(faces) > 0
 
-try:
-    c.execute('''CREATE TABLE IF NOT EXISTS VISITS
-                (ID INTEGER PRIMARY KEY AUTOINCREMENT,
-                DATETIME TEXT,
-                DISTANCE REAL,
-                PHOTO_PATH TEXT,
-                FACE_DETECTED INTEGER)''')
-    while True:
-        data = arduino.readline().decode('utf-8').strip()
+def parse_distance(line):
+    #Arduino output format: "DETECTED,<distance>"
+    parts = line.split(",")
+    if len(parts) != 2 or parts[0] != "DETECTED":
+        print(f"Ignoring unexpected serial line: {line!r}")
+        return None
+    return int(parts[1])
+
+def handle_detection(picam2, conn, distance):
+    #Detection and DB insert
+    now = datetime.now() #One timestamp shared by the photo and the DB row
+    photo_path = take_photo(picam2, now)
+
+    if detect_face(photo_path):
+        conn.execute("INSERT INTO VISITS (DATETIME, DISTANCE, PHOTO_PATH) VALUES (?, ?, ?)",
+                     (now.isoformat(timespec="seconds"), distance, photo_path))
+        conn.commit()
+        print(f"Face detected at {now:%H:%M:%S}. Distance: {distance} cm. Saved {photo_path}.")
+    else:
+        os.remove(photo_path)
+        print(f"No face detected. Distance: {distance} cm. Photo deleted.")
         
-        if data:
-            print(data) #For testing
-            row = data.split(',')
-            
-            if len(row) == 2: #As long as there is a distamce, proceed
-                distance = int(row[1])
-                photo_path = take_photo()
-                face_detected = detect_face(photo_path)
-                
-                if (face_detected == 1):
-                    timestamp = datetime.now().isoformat(timespec="seconds")
-                    c.execute("INSERT INTO VISITS (datetime, distance, photo_path, face_detected) VALUES (?, ?, ?, ?)",
-                            (timestamp, distance, photo_path, face_detected))
-                    conn.commit()
-                    print(f"Face detected at {timestamp}. Distance: {distance} cm. Photo saved at {photo_path}.")
-                else:
-                    os.remove(photo_path)
-                    print(f"No face detected. Distance: {distance} cm. Photo deleted.")
-finally:
-    picam2.stop()
-    arduino.close()
-    conn.close()
-            
+def main():
+    os.makedirs(IMAGE_DIR, exist_ok=True)
+    picam2 = setup_camera()
+    arduino = serial.Serial(port="/dev/ttyACM0", baudrate=9600, timeout=0.1)
+    conn = setup_db()
+
+    try:
+        while True:
+            #The Arduino resets when the port opens, so early bytes can be garbage
+            line = arduino.readline().decode("utf-8", errors="replace").strip()
+            if not line:
+                continue
+            distance = parse_distance(line)
+            if distance is not None:
+                handle_detection(picam2, conn, distance)
+    finally:
+        picam2.stop()
+        arduino.close()
+        conn.close()
+
+
+if __name__ == "__main__":
+    main()

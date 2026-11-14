@@ -1,3 +1,5 @@
+#include <avr/wdt.h>
+
 //Pins
 const int trigPin = 9;
 const int echoPin = 10;
@@ -32,6 +34,10 @@ volatile bool paused = false;
 const int ledPin = 6;
 const unsigned long fadePeriod = 2000; //One full fade up and down
 
+//Heartbeat, lets the Pi know the Arduino is still running
+const unsigned long heartbeatInterval = 1000;
+unsigned long lastHeartbeatTime = 0;
+
 
 void setup() {
   pinMode(trigPin, OUTPUT);
@@ -49,12 +55,17 @@ void setup() {
   //Initiate starting range from where the knob is set to
   detectionRange = readRange();
   sendRange();
+
+  //Resets the Arduino if loop() stops running for 2 seconds
+  wdt_enable(WDTO_2S);
 }
 
 void loop() {
+  wdt_reset();
   unsigned long now = millis();
   updateLed(now);
   updateRange();
+  sendHeartbeat(now);
 
   if (paused) {
     return;
@@ -173,5 +184,12 @@ void updateRange() {
 void sendRange() {
   Serial.print("RANGE,");
   Serial.println(detectionRange);
+}
+
+void sendHeartbeat(unsigned long now) {
+  if (now - lastHeartbeatTime >= heartbeatInterval) {
+    lastHeartbeatTime = now;
+    Serial.println("HEARTBEAT");
+  }
 }
 

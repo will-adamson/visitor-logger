@@ -8,6 +8,7 @@ import serial
 from picamera2 import Picamera2
 
 IMAGE_DIR = "images"
+HEARTBEAT_TIMEOUT = 5
 
 #Loaded once at startup instead of on every photo
 FACE_CLASSIFIER = cv.CascadeClassifier(
@@ -64,6 +65,9 @@ def detect_face(photo_path):
     return len(faces) > 0
 
 def parse_line(line):
+    if line == "HEARTBEAT":
+        return "HEARTBEAT", None
+    
     #Arduino output format: "DETECTED,<distance>" or "RANGE,<range>"
     parts = line.split(",")
     if len(parts) != 2 or parts[0] not in ("DETECTED", "RANGE"):
@@ -92,11 +96,16 @@ def main():
     conn = setup_db()
 
     try:
+        last_seen = time.monotonic()
         while True:
             #The Arduino resets when the port opens, so early bytes can be garbage
             line = arduino.readline().decode("utf-8", errors="replace").strip()
             if not line:
+                if time.monotonic() - last_seen > HEARTBEAT_TIMEOUT:
+                    raise RuntimeError(f"No message from Arduino for {HEARTBEAT_TIMEOUT}s, connection lost")
                 continue
+            last_seen = time.monotonic()
+
             message, value = parse_line(line)
             if message == "DETECTED":
                 handle_detection(picam2, conn, value)

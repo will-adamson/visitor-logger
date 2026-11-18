@@ -49,7 +49,7 @@
         photo.src = latest.photo;
         photo.hidden = false;
       }
-      show("photo-info", `${latest.time.replace("T", " ")} · ${latest.distance} cm`);
+      show("photo-info", `Photo info: ${latest.time.replace("T", " ")} · Distance: ${latest.distance} cm`);
     }
 
     async function refresh() {

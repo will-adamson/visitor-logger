@@ -8,9 +8,9 @@ import serial
 from picamera2 import Picamera2
 
 IMAGE_DIR = "images"
-HEARTBEAT_TIMEOUT = 5
+HEARTBEAT_TIMEOUT = 5 #Seconds
 
-#Loaded once at startup instead of on every photo
+#Loaded once at startup and reused on every photo
 FACE_CLASSIFIER = cv.CascadeClassifier(
     cv.data.haarcascades + "haarcascade_frontalface_default.xml")
 
@@ -31,7 +31,7 @@ def setup_camera():
 
 
 def setup_db():
-    #Setup database in its own function, rather than in main loop.
+    #Setup database in its own function
     conn = sqlite3.connect("logDB.db")
     conn.execute("PRAGMA journal_mode=WAL;") #For easier displaying of the info while running the program
     conn.execute('''CREATE TABLE IF NOT EXISTS VISITS
@@ -46,11 +46,13 @@ def setup_db():
     
     return conn
 
+
 def save_range(conn, detection_range):
     #Always row 1, so this overwrites the previous range
     conn.execute("INSERT OR REPLACE INTO STATUS (ID, DETECTION_RANGE) VALUES (1, ?)",
                  (detection_range,))
     conn.commit()
+
 
 def take_photo(picam2, now):
     photo_path = f"{IMAGE_DIR}/{now.strftime('%Y%m%d_%H%M%S')}.jpg"
@@ -58,11 +60,10 @@ def take_photo(picam2, now):
     
     return photo_path
 
-    
 
 def detect_face(photo_path):
     img = cv.imread(photo_path)
-    if img is None: #imread returns None if there's no file
+    if img is None: #imread returns None if can't be read
         raise RuntimeError(f"Could not read photo: {photo_path}")
 
     #BEGIN: https://www.datacamp.com/tutorial/face-detection-python-opencv
@@ -74,8 +75,9 @@ def detect_face(photo_path):
     #END: https://www.datacamp.com/tutorial/face-detection-python-opencv
     return len(faces) > 0
 
+
 def parse_line(line):
-    #Arduino output format: "DETECTED,<distance>" or "RANGE,<distance>" or "HEARTBEAT"
+    #Arduino output format: "DETECTED,<distance>" or "RANGE,<range>" or "HEARTBEAT"
     if line == "HEARTBEAT":
         return "HEARTBEAT", None
     parts = line.split(",")
@@ -83,6 +85,7 @@ def parse_line(line):
         print(f"Ignoring unexpected serial line: {line!r}")
         return None, None
     return parts[0], int(parts[1])
+
 
 def handle_detection(picam2, conn, distance):
     #Detection and DB insert
@@ -97,6 +100,7 @@ def handle_detection(picam2, conn, distance):
     else:
         os.remove(photo_path)
         print(f"No face detected. Distance: {distance} cm. Photo deleted.")
+     
         
 def main():
     os.makedirs(IMAGE_DIR, exist_ok=True)

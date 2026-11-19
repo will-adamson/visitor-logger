@@ -102,8 +102,7 @@ float readDistance() {
 float medianDistance(float newReading) {
   readings[readingIndex] = newReading;
   readingIndex = (readingIndex + 1) % sampleCount;
-
-  //Sort a copy, so the buffer keeps track of which reading is oldest
+  
   //BEGIN: https://www.geeksforgeeks.org/cpp/cpp-program-for-insertion-sort/
   //Insertion sort
   float sorted[sampleCount];
@@ -140,7 +139,7 @@ void checkForVisitor(float distance, unsigned long now) {
   wasDetected = true;
 }
 
-//Interrupt handler: runs the instant the button pulls pin 2 LOW
+//Interrupt when the button pulls pin 2 LOW
 void onButtonPress() {
   static unsigned long lastPressTime = 0;
   unsigned long now = millis();

@@ -22,7 +22,7 @@ cd visitor-logger
 
 ### Network
 
-Connect to wifi so "visits today" and "busiest hour" are correct:
+Connect to wifi:
 ```bash
 sudo nmcli device wifi connect "<network name>" password "<password>"
 ```

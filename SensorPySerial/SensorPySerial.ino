@@ -34,7 +34,7 @@ volatile bool paused = false;
 const int ledPin = 6;
 const unsigned long fadePeriod = 2000; //One full fade up and down
 
-//Heartbeat for watchdog timer
+//Heartbeat
 const unsigned long heartbeatInterval = 1000;
 unsigned long lastHeartbeatTime = 0;
 
@@ -102,7 +102,7 @@ float readDistance() {
 float medianDistance(float newReading) {
   readings[readingIndex] = newReading;
   readingIndex = (readingIndex + 1) % sampleCount;
-  
+
   //BEGIN: https://www.geeksforgeeks.org/cpp/cpp-program-for-insertion-sort/
   //Insertion sort
   float sorted[sampleCount];
